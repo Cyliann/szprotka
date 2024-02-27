@@ -1,3 +1,5 @@
+use futures::{Stream,TryStreamExt};
+use eventsource_client as es;
 use reqwest::header::AUTHORIZATION;
 use serde::Deserialize;
 use std::{
@@ -11,19 +13,21 @@ struct RegisterRespone {
     room: String,
 }
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let client = reqwest::blocking::Client::new();
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let client = reqwest::Client::new();
 
     let (username, room) = handle_input();
-    let (token, room) = register(&client, username, room)?;
+    let (token, room) = register(&client, username, room).await?;
+    println!("Token: {}", &token);
+    handle_sse(token).await?;
 
     println!("Room: {}", room);
-    println!("Token: {}", token);
     Ok(())
 }
 
-fn register(
-    client: &reqwest::blocking::Client,
+async fn register(
+    client: &reqwest::Client,
     username: String,
     _room: String,
 ) -> Result<(String, String), Box<dyn std::error::Error>> {
@@ -34,23 +38,26 @@ fn register(
     // TODO
     params.insert("room", String::from(""));
 
-    let resp = client
+    let resp_result = client
         .post("http://localhost:8080/register")
         .json(&params)
-        .send()?
+        .send()
+        .await?
         .error_for_status();
 
-    if let Err(err) = resp {
+    if let Err(err) = resp_result {
         return Err(err.status().unwrap().to_string())?;
     }
 
-    let ok_resp = resp?;
-    if let Some(auth) = ok_resp.headers().get(AUTHORIZATION) {
+    let resp = resp_result?;
+    println!("{resp:#?}");
+    
+    if let Some(auth) = resp.headers().get(AUTHORIZATION) {
         let token = String::from_utf8_lossy(auth.as_bytes()).to_string();
-        res_body = ok_resp.json()?;
+        res_body = resp.json().await?;
         return Ok((token, res_body.room));
     }
-    Err("Client unauthorized")?
+    Err("Error obtaining the token")?
 }
 
 fn handle_input() -> (String, String) {
@@ -65,5 +72,32 @@ fn handle_input() -> (String, String) {
     // io::stdout().flush()?;
     // io::stdin().read_line(&mut room)?;
     //
-    return (username, room);
+    (username, room)
+}
+
+async fn handle_sse(token: String) -> Result<(), eventsource_client::Error> {
+let token_str = format!("Bearer {token}");
+let client = eventsource_client::ClientBuilder::for_url("http://localhost:8080/play")?
+    .header("Authorization", token_str.as_str())?
+    .build();
+
+let mut stream = tail_events(client);
+
+    while let Ok(Some(_)) = stream.try_next().await {}
+
+Ok(())
+}
+
+fn tail_events(client: impl es::Client) -> impl Stream<Item = Result<(), ()>> {
+    client
+        .stream()
+        .map_ok(|event| match event {
+            es::SSE::Event(ev) => {
+                println!("got an event: {}\n{}", ev.event_type, ev.data)
+            }
+            es::SSE::Comment(comment) => {
+                println!("got a comment: \n{}", comment)
+            }
+        })
+        .map_err(|err| eprintln!("error streaming events: {:?}", err))
 }
