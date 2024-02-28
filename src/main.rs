@@ -1,10 +1,10 @@
-use futures::{Stream,TryStreamExt};
+use futures::{Stream, TryStreamExt};
 use eventsource_client as es;
 use reqwest::header::AUTHORIZATION;
 use serde::Deserialize;
 use std::{
     collections::HashMap,
-    io::{self, Write},
+    io::{self, Write}, thread::sleep, time::Duration,
 };
 
 #[derive(Deserialize)]
@@ -13,14 +13,26 @@ struct RegisterRespone {
     room: String,
 }
 
-#[tokio::main]
+#[tokio::main(flavor="multi_thread")]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let client = reqwest::Client::new();
 
     let (username, room) = handle_input();
     let (token, room) = register(&client, username, room).await?;
     println!("Token: {}", &token);
-    handle_sse(token).await?;
+
+    let token_clone = token.clone();
+    tokio::task::spawn(async move {
+      let _ = handle_sse(token_clone).await;
+    });
+
+    loop {
+        roll(&client, &token).await?;
+        if false {
+            break;
+        }
+        sleep(Duration::from_secs(1));
+    }
 
     println!("Room: {}", room);
     Ok(())
@@ -60,6 +72,28 @@ async fn register(
     Err("Error obtaining the token")?
 }
 
+async fn roll(client: &reqwest::Client, token: &String) -> Result<(), reqwest::Error>{
+    let mut params = HashMap::new();
+    let mut headers = reqwest::header::HeaderMap::new();
+    
+    params.insert("dice", [100]);
+    headers.insert(AUTHORIZATION, format!("Bearer {}", token).parse().unwrap());
+
+    let req = client
+        .post("http://localhost:8080/roll")
+        .headers(headers)
+        .json(&params)
+        .send()
+        .await?
+        .error_for_status();
+
+    if let Err(err) = req {
+        return Err(err);
+    }
+
+    Ok(())
+}
+
 fn handle_input() -> (String, String) {
     let room = String::new();
     let mut username = String::new();
@@ -76,12 +110,12 @@ fn handle_input() -> (String, String) {
 }
 
 async fn handle_sse(token: String) -> Result<(), eventsource_client::Error> {
-let token_str = format!("Bearer {token}");
-let client = eventsource_client::ClientBuilder::for_url("http://localhost:8080/play")?
-    .header("Authorization", token_str.as_str())?
-    .build();
+    let token_str = format!("Bearer {token}");
+    let client = eventsource_client::ClientBuilder::for_url("http://localhost:8080/play")?
+        .header("Authorization", token_str.as_str())?
+        .build();
 
-let mut stream = tail_events(client);
+    let mut stream = tail_events(client);
 
     while let Ok(Some(_)) = stream.try_next().await {}
 
