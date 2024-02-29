@@ -11,14 +11,13 @@ struct RegisterRespone {
 pub async fn register(
     client: &reqwest::Client,
     username: String,
-    _room: String,
+    room: String,
 ) -> Result<(String, String), Box<dyn std::error::Error>> {
     let mut params = HashMap::new();
     let res_body: RegisterRespone;
 
     params.insert("username", username);
-    // TODO
-    params.insert("room", String::from(""));
+    params.insert("room", room);
 
     let resp_result = client
         .post("http://localhost:8080/register")
@@ -45,7 +44,7 @@ pub async fn roll(client: &reqwest::Client, token: &String) -> Result<(), reqwes
     let mut params = HashMap::new();
     let mut headers = reqwest::header::HeaderMap::new();
 
-    params.insert("dice", [100]);
+    params.insert("dice", [100, 20, 6]);
     headers.insert(AUTHORIZATION, format!("Bearer {}", token).parse().unwrap());
 
     let req = client
