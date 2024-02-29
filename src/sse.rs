@@ -1,5 +1,17 @@
 use eventsource_client as es;
 use futures::{Stream, TryStreamExt};
+use serde::Deserialize;
+use serde_json;
+
+#[derive(Deserialize)]
+struct Roll {
+    #[serde(rename = "Username")]
+    username: String,
+    #[serde(rename = "Room")]
+    _room: String,
+    #[serde(rename = "Result")]
+    result: Vec<u8>,
+}
 
 pub async fn handle_sse(token: String) -> Result<(), eventsource_client::Error> {
     let token_str = format!("Bearer {token}");
@@ -19,11 +31,27 @@ fn tail_events(client: impl es::Client) -> impl Stream<Item = Result<(), ()>> {
         .stream()
         .map_ok(|event| match event {
             es::SSE::Event(ev) => {
-                println!("got an event: {}\n{}", ev.event_type, ev.data)
+                handle_events(ev);
             }
             es::SSE::Comment(comment) => {
                 println!("got a comment: \n{}", comment)
             }
         })
         .map_err(|err| eprintln!("error streaming events: {:?}", err))
+}
+
+fn handle_events(ev: es::Event) {
+    if ev.type != "roll" {
+        println!("Event type: {}\nEvent data: {}", ev.type, ev.data);
+        return
+    }
+
+    let body: Roll = serde_json::from_str(&ev.data).unwrap();
+
+    let mut results = String::new();
+    for r in body.result.iter() {
+        results.push_str(&r.to_string());
+        results.push_str(", ");
+    }
+    println!("{} rolled {}", body.username, results);
 }
