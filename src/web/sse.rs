@@ -41,8 +41,8 @@ fn tail_events(client: impl es::Client) -> impl Stream<Item = Result<(), ()>> {
 }
 
 fn handle_events(ev: es::Event) {
-    if ev.type != "roll" {
-        println!("Event type: {}\nEvent data: {}", ev.type, ev.data);
+    if ev.event_type != "roll" {
+        println!("Event type: {}\nEvent data: {}", ev.event_type, ev.data);
         return
     }
 
