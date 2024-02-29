@@ -3,7 +3,6 @@ use std::{
     time::Duration,
 };
 
-mod sse;
 mod web;
 mod input;
 
@@ -12,16 +11,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let client = reqwest::Client::new();
 
     let (username, room) = input::handle_input();
-    let (token, room) = web::register(&client, username, room).await?;
+    let (token, room) = web::req::register(&client, username, room).await?;
     println!("Room: {}", room);
 
-    let token_clone = token.clone();
+    let token = token.clone();
     tokio::task::spawn(async move {
-        let _ = sse::handle_sse(token_clone).await;
+        let _ = web::sse::handle_sse(token).await;
     });
 
     loop {
-        web::roll(&client, &token).await?;
+        web::req::roll(&client, &token).await?;
         if false {
             break;
         }
