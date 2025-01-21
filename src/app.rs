@@ -1,5 +1,6 @@
 use crate::error::Error;
-use std::io;
+use crate::web;
+use std::{io, thread::sleep, time::Duration};
 
 use crossterm::{
     event::{self, Event, KeyCode, KeyModifiers},
@@ -17,6 +18,13 @@ use ratatui::{
 pub struct App {
     terminal: Terminal<CrosstermBackend<io::Stdout>>,
     state: CurrentField,
+    pub user: User,
+}
+
+pub struct User {
+    pub username: String,
+    pub room: String,
+    token: String,
 }
 
 enum CurrentField {
@@ -25,7 +33,7 @@ enum CurrentField {
 }
 
 impl App {
-    pub fn run(&mut self) -> Result<(String, String), Box<dyn std::error::Error>> {
+    pub fn get_input(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         let mut username = String::new();
         let mut room = String::new();
         self.state = CurrentField::Username;
@@ -89,7 +97,33 @@ impl App {
                 }
             }
         }
-        Ok((username, room))
+        self.user.username = username;
+        self.user.room = room;
+        Ok(())
+    }
+
+    pub async fn subscribe(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        let client = reqwest::Client::new();
+
+        let (token, room) =
+            web::req::register(&client, &self.user.username, &self.user.room).await?;
+        self.user.room = room;
+        self.user.token = token;
+        println!("Room: {}", &self.user.room);
+
+        let token_clone = self.user.token.clone();
+        tokio::task::spawn(async move {
+            let _ = web::sse::handle_sse(token_clone).await;
+        });
+
+        loop {
+            if false {
+                break;
+            }
+            web::req::roll(&client, &self.user.token).await?;
+            sleep(Duration::from_secs(3));
+        }
+        Ok(())
     }
 
     pub fn close(&mut self, err: Option<Error>) -> Result<(), Box<dyn std::error::Error>> {
@@ -130,5 +164,10 @@ pub fn new() -> Result<App, Box<dyn std::error::Error>> {
     Ok(App {
         terminal,
         state: CurrentField::Username,
+        user: User {
+            username: String::new(),
+            room: String::new(),
+            token: String::new(),
+        },
     })
 }
