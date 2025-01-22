@@ -13,7 +13,7 @@ struct Roll {
     result: Vec<u8>,
 }
 
-const URL: &str = "http:localhost:8080";
+const URL: &str = "http://localhost:8080";
 
 pub async fn handle_sse(token: String) -> Result<(), eventsource_client::Error> {
     let token_str = format!("Bearer {token}");
@@ -38,7 +38,9 @@ fn tail_events(client: impl es::Client) -> impl Stream<Item = Result<(), ()>> {
             es::SSE::Comment(comment) => {
                 println!("got a comment: \n{}", comment)
             }
-            _ => (),
+            es::SSE::Connected(conn) => {
+                println!("Connected! {}", conn.response().status());
+            }
         })
         .map_err(|err| eprintln!("error streaming events: {:?}", err))
 }

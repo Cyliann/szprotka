@@ -8,7 +8,7 @@ struct RegisterRespone {
     room: String,
 }
 
-const URL: &str = "http:localhost:8080";
+const URL: &str = "http://localhost:8080";
 
 pub async fn register(
     client: &reqwest::Client,

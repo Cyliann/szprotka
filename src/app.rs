@@ -112,9 +112,7 @@ impl App {
         println!("Room: {}", &self.user.room);
 
         let token_clone = self.user.token.clone();
-        tokio::task::spawn(async move {
-            let _ = web::sse::handle_sse(token_clone).await;
-        });
+        tokio::task::spawn(async move { web::sse::handle_sse(token_clone).await });
 
         loop {
             if false {
