@@ -1,23 +1,18 @@
-use crate::error::Error;
+use crate::prelude::*;
 use crate::web;
+use crate::{error::Error, tui};
 use std::{io, thread::sleep, time::Duration};
 
 use crossterm::{
-    event::{self, Event, KeyCode, KeyModifiers},
+    event::{self},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode},
 };
-use ratatui::{
-    Terminal,
-    backend::CrosstermBackend,
-    layout::{Constraint, Direction, Layout},
-    style::{Color, Modifier, Style},
-    widgets::{Block, Borders, Paragraph},
-};
+use ratatui::{Terminal, backend::CrosstermBackend};
 
 pub struct App {
-    terminal: Terminal<CrosstermBackend<io::Stdout>>,
-    state: CurrentField,
+    tui: tui::TUI,
+    state: State,
     pub user: User,
 }
 
@@ -27,87 +22,21 @@ pub struct User {
     token: String,
 }
 
-enum CurrentField {
+pub enum State {
     Username,
     Room,
 }
 
 impl App {
-    pub fn get_input(&mut self) -> Result<(), Box<dyn std::error::Error>> {
-        let mut username = String::new();
-        let mut room = String::new();
-        self.state = CurrentField::Username;
-        loop {
-            self.terminal.draw(|f| {
-                let chunks = Layout::default()
-                    .direction(Direction::Vertical)
-                    .margin(20)
-                    .constraints([Constraint::Min(1), Constraint::Max(1)])
-                    .split(f.area());
+    pub fn get_input(&mut self) -> Result<()> {
+        self.user.username = self.tui.get_input(&self.state)?;
+        self.state = State::Room;
+        self.user.room = self.tui.get_input(&self.state)?;
 
-                let block;
-                match self.state {
-                    CurrentField::Username => {
-                        block = Paragraph::new(format!("Username: {}", username)).block(
-                            Block::default()
-                                .borders(Borders::ALL)
-                                .title("Enter a username"),
-                        );
-                    }
-                    CurrentField::Room => {
-                        block = Paragraph::new(format!("Room: {}", room))
-                            .block(Block::default().borders(Borders::ALL).title("Input Room"));
-                    }
-                }
-                f.render_widget(block, chunks[0]);
-
-                let help_message = match self.state {
-                    CurrentField::Username => "",
-                    CurrentField::Room => "Leave empty to create a new room.",
-                };
-
-                let help_block = Paragraph::new(help_message).style(
-                    Style::default()
-                        .fg(Color::Yellow)
-                        .add_modifier(Modifier::BOLD),
-                );
-
-                f.render_widget(help_block, chunks[1]);
-            })?;
-            if let Event::Key(key) = event::read()? {
-                let field: &mut String;
-                match self.state {
-                    CurrentField::Username => field = &mut username,
-                    CurrentField::Room => field = &mut room,
-                }
-
-                match key.code {
-                    KeyCode::Enter => match self.state {
-                        CurrentField::Username => self.state = CurrentField::Room,
-                        CurrentField::Room => break,
-                    },
-                    KeyCode::Char(char) => {
-                        if char == 'c' && key.modifiers == KeyModifiers::CONTROL {
-                            _ = self.close(Some(Error::ProgramTerminated("CTRL-C".to_string())));
-                        }
-                        field.push(char);
-                    }
-                    KeyCode::Backspace => {
-                        field.pop();
-                    }
-                    KeyCode::Esc => {
-                        _ = self.close(Some(Error::ProgramTerminated("ESC".to_string())));
-                    }
-                    _ => {}
-                }
-            }
-        }
-        self.user.username = username;
-        self.user.room = room;
         Ok(())
     }
 
-    pub async fn subscribe(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn subscribe(&mut self) -> Result<()> {
         let client = reqwest::Client::new();
 
         let (token, room) =
@@ -129,14 +58,14 @@ impl App {
         Ok(())
     }
 
-    pub fn close(&mut self, err: Option<Error>) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn close(&mut self, err: Option<Error>) -> Result<()> {
         disable_raw_mode()?;
         execute!(
-            self.terminal.backend_mut(),
+            self.tui.terminal.backend_mut(),
             crossterm::terminal::LeaveAlternateScreen,
             event::PopKeyboardEnhancementFlags
         )?;
-        self.terminal.show_cursor()?;
+        self.tui.terminal.show_cursor()?;
         if let Some(err) = err {
             eprintln!("{}", err);
             std::process::exit(1);
@@ -145,7 +74,7 @@ impl App {
     }
 }
 
-pub fn new() -> Result<App, Box<dyn std::error::Error>> {
+pub fn new() -> Result<App> {
     // Initialize terminal
     enable_raw_mode()?;
     let mut stdout = io::stdout();
@@ -165,8 +94,8 @@ pub fn new() -> Result<App, Box<dyn std::error::Error>> {
     let terminal = Terminal::new(backend)?;
 
     Ok(App {
-        terminal,
-        state: CurrentField::Username,
+        tui: tui::TUI { terminal },
+        state: State::Username,
         user: User {
             username: String::new(),
             room: String::new(),
