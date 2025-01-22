@@ -95,7 +95,9 @@ impl App {
                     KeyCode::Backspace => {
                         field.pop();
                     }
-                    KeyCode::Esc => break,
+                    KeyCode::Esc => {
+                        _ = self.close(Some(Error::ProgramTerminated("ESC".to_string())));
+                    }
                     _ => {}
                 }
             }
