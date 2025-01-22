@@ -15,4 +15,10 @@ pub enum Error {
 
     #[error("Error obtaining the token")]
     Token,
+
+    #[error("Error streaming events: {0}")]
+    EventsourceClient(#[from] eventsource_client::Error),
+
+    #[error("Error streaming events: {0}")]
+    JoinError(#[from] tokio::task::JoinError),
 }
