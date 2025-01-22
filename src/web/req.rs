@@ -1,3 +1,4 @@
+use crate::prelude::*;
 use reqwest::header::AUTHORIZATION;
 use serde::Deserialize;
 use std::collections::HashMap;
@@ -14,7 +15,7 @@ pub async fn register(
     client: &reqwest::Client,
     username: &String,
     room: &String,
-) -> Result<(String, String), Box<dyn std::error::Error>> {
+) -> Result<(String, String)> {
     let mut params = HashMap::new();
     let res_body: RegisterRespone;
 
@@ -29,7 +30,7 @@ pub async fn register(
         .error_for_status();
 
     if let Err(err) = resp_result {
-        return Err(err.status().unwrap().to_string())?;
+        return Err(err)?;
     }
 
     let resp = resp_result?;
@@ -39,10 +40,10 @@ pub async fn register(
         res_body = resp.json().await?;
         return Ok((token, res_body.room));
     }
-    Err("Error obtaining the token")?
+    Err(Error::Token)
 }
 
-pub async fn roll(client: &reqwest::Client, token: &String) -> Result<(), reqwest::Error> {
+pub async fn roll(client: &reqwest::Client, token: &String) -> Result<reqwest::Response> {
     let mut params = HashMap::new();
     let mut headers = reqwest::header::HeaderMap::new();
 
@@ -50,16 +51,15 @@ pub async fn roll(client: &reqwest::Client, token: &String) -> Result<(), reqwes
     headers.insert(AUTHORIZATION, format!("Bearer {}", token).parse().unwrap());
 
     let req = client
-        .post("http://localhost:8080/roll")
+        .post(format!("{}/roll", URL))
         .headers(headers)
         .json(&params)
         .send()
         .await?
         .error_for_status();
 
-    if let Err(err) = req {
-        return Err(err);
+    match req {
+        Ok(resp) => Ok(resp),
+        Err(err) => Err(err.into()),
     }
-
-    Ok(())
 }

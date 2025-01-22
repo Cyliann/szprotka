@@ -6,4 +6,13 @@ pub enum Error {
     // Generic(String),
     #[error("Program terminated with {0}")]
     ProgramTerminated(String),
+
+    #[error(transparent)]
+    IO(#[from] std::io::Error),
+
+    #[error(transparent)]
+    Request(#[from] reqwest::Error),
+
+    #[error("Error obtaining the token")]
+    Token,
 }
