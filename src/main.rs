@@ -2,6 +2,7 @@ use std::error::Error;
 
 mod app;
 mod error;
+mod prelude;
 mod web;
 
 #[tokio::main(flavor = "multi_thread")]
