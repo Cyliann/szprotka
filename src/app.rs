@@ -75,6 +75,12 @@ impl App {
                 f.render_widget(help_block, chunks[1]);
             })?;
             if let Event::Key(key) = event::read()? {
+                let field: &mut String;
+                match self.state {
+                    CurrentField::Username => field = &mut username,
+                    CurrentField::Room => field = &mut room,
+                }
+
                 match key.code {
                     KeyCode::Enter => match self.state {
                         CurrentField::Username => self.state = CurrentField::Room,
@@ -84,13 +90,10 @@ impl App {
                         if char == 'c' && key.modifiers == KeyModifiers::CONTROL {
                             _ = self.close(Some(Error::ProgramTerminated("CTRL-C".to_string())));
                         }
-                        match self.state {
-                            CurrentField::Username => username.push(char),
-                            CurrentField::Room => room.push(char),
-                        }
+                        field.push(char);
                     }
                     KeyCode::Backspace => {
-                        username.pop();
+                        field.pop();
                     }
                     KeyCode::Esc => break,
                     _ => {}
