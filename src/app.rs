@@ -1,19 +1,20 @@
 use crate::prelude::*;
 use crate::web;
 use crate::{error::Error, tui};
-use std::{io, thread::sleep, time::Duration};
+use std::sync::Arc;
+use std::sync::Mutex;
 
 use crossterm::{
     event::{self},
     execute,
-    terminal::{disable_raw_mode, enable_raw_mode},
+    terminal::disable_raw_mode,
 };
-use ratatui::{Terminal, backend::CrosstermBackend};
 
 pub struct App {
     tui: tui::TUI,
     state: State,
     pub user: User,
+    messages: Arc<Mutex<Vec<String>>>,
 }
 
 pub struct User {
@@ -41,26 +42,14 @@ impl App {
 
         let (token, room) =
             web::req::register(&client, &self.user.username, &self.user.room).await?;
-        self.user.room = room;
-        self.user.token = token;
-        println!("Room: {}", &self.user.room);
+        self.user.room = room.clone();
+        self.user.token = token.clone();
 
-        let token_clone = self.user.token.clone();
-        let handle = tokio::task::spawn(async move { web::sse::handle_sse(token_clone).await });
+        let message_lock = self.messages.clone();
+        tokio::task::spawn(async move { web::sse::handle_sse(token, message_lock).await });
 
-        match handle.await {
-            Ok(Ok(_)) => (),
-            Ok(Err(err)) => return Err(err.into()),
-            Err(err) => return Err(err.into()),
-        }
+        self.tui.display_sse(room, self.messages.clone())?;
 
-        loop {
-            if false {
-                break;
-            }
-            web::req::roll(&client, &self.user.token).await?;
-            sleep(Duration::from_secs(3));
-        }
         Ok(())
     }
 
@@ -81,31 +70,14 @@ impl App {
 }
 
 pub fn new() -> Result<App> {
-    // Initialize terminal
-    enable_raw_mode()?;
-    let mut stdout = io::stdout();
-
-    execute!(
-        stdout,
-        crossterm::terminal::EnterAlternateScreen,
-        event::PushKeyboardEnhancementFlags(
-            event::KeyboardEnhancementFlags::DISAMBIGUATE_ESCAPE_CODES
-        ),
-        event::PushKeyboardEnhancementFlags(
-            event::KeyboardEnhancementFlags::REPORT_ALL_KEYS_AS_ESCAPE_CODES
-        )
-    )?;
-
-    let backend = CrosstermBackend::new(stdout);
-    let terminal = Terminal::new(backend)?;
-
     Ok(App {
-        tui: tui::TUI { terminal },
+        tui: tui::new()?,
         state: State::Username,
         user: User {
             username: String::new(),
             room: String::new(),
             token: String::new(),
         },
+        messages: Arc::new(Mutex::new(vec![])),
     })
 }

@@ -43,7 +43,7 @@ pub async fn register(
     Err(Error::Token)
 }
 
-pub async fn roll(client: &reqwest::Client, token: &String) -> Result<reqwest::Response> {
+pub async fn _roll(client: &reqwest::Client, token: &String) -> Result<reqwest::Response> {
     let mut params = HashMap::new();
     let mut headers = reqwest::header::HeaderMap::new();
 
