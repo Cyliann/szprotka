@@ -1,4 +1,4 @@
-use std::error::Error;
+use crate::prelude::*;
 
 mod app;
 mod error;
@@ -7,7 +7,7 @@ mod tui;
 mod web;
 
 #[tokio::main(flavor = "multi_thread")]
-async fn main() -> Result<(), Box<dyn Error>> {
+async fn main() -> Result<()> {
     let mut app = app::new()?;
     if let Err(err) = app.get_input() {
         app.close(Some(err))?;
