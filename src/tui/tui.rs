@@ -123,24 +123,9 @@ impl TUI {
     }
 }
 
-pub fn new() -> Result<TUI> {
-    // Initialize terminal
-    enable_raw_mode()?;
-    let mut stdout = io::stdout();
-
-    execute!(
-        stdout,
-        crossterm::terminal::EnterAlternateScreen,
-        event::PushKeyboardEnhancementFlags(
-            event::KeyboardEnhancementFlags::DISAMBIGUATE_ESCAPE_CODES
-        ),
-        event::PushKeyboardEnhancementFlags(
-            event::KeyboardEnhancementFlags::REPORT_ALL_KEYS_AS_ESCAPE_CODES
-        )
-    )?;
-
-    let backend = CrosstermBackend::new(stdout);
-    let terminal = Terminal::new(backend)?;
-
-    Ok(TUI { terminal })
+impl Default for TUI {
+    fn default() -> Self {
+        let terminal = ratatui::init();
+        TUI { terminal }
+    }
 }

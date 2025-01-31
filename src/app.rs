@@ -1,15 +1,14 @@
 use crate::prelude::*;
+use crate::tui;
 use crate::web;
-use crate::{error::Error, tui};
+use std::io::Stdout;
 use std::sync::Arc;
 use std::sync::Mutex;
 
-use crossterm::{
-    event::{self},
-    execute,
-    terminal::disable_raw_mode,
-};
+use ratatui::Terminal;
+use ratatui::prelude::CrosstermBackend;
 
+#[derive(Default)]
 pub struct App {
     tui: tui::TUI,
     state: State,
@@ -17,13 +16,16 @@ pub struct App {
     messages: Arc<Mutex<Vec<String>>>,
 }
 
+#[derive(Default)]
 pub struct User {
     pub username: String,
     pub room: String,
     token: String,
 }
 
+#[derive(Default)]
 pub enum State {
+    #[default]
     Username,
     Room,
 }
@@ -52,32 +54,14 @@ impl App {
 
         Ok(())
     }
+}
 
-    pub fn close(&mut self, err: Option<Error>) -> Result<()> {
-        disable_raw_mode()?;
-        execute!(
-            self.tui.terminal.backend_mut(),
-            crossterm::terminal::LeaveAlternateScreen,
-            event::PopKeyboardEnhancementFlags
-        )?;
-        self.tui.terminal.show_cursor()?;
-        if let Some(err) = err {
-            eprintln!("{}", err);
-            std::process::exit(1);
-        }
-        Ok(())
+impl Drop for App {
+    fn drop(&mut self) {
+        cleanup();
     }
 }
 
-pub fn new() -> Result<App> {
-    Ok(App {
-        tui: tui::new()?,
-        state: State::Username,
-        user: User {
-            username: String::new(),
-            room: String::new(),
-            token: String::new(),
-        },
-        messages: Arc::new(Mutex::new(vec![])),
-    })
+pub fn cleanup() {
+    ratatui::restore();
 }

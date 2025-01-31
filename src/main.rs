@@ -8,15 +8,9 @@ mod web;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() -> Result<()> {
-    let mut app = app::new()?;
-    if let Err(err) = app.get_input() {
-        app.close(Some(err))?;
-    }
-
-    if let Err(err) = app.subscribe().await {
-        app.close(Some(err))?;
-    }
-    app.close(None)?;
+    let mut app = app::App::default();
+    app.get_input()?;
+    app.subscribe().await?;
 
     Ok(())
 }
