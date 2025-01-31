@@ -6,11 +6,7 @@ use std::{
     time::Duration,
 };
 
-use crossterm::{
-    event::{self, Event, KeyCode, KeyModifiers},
-    execute,
-    terminal::enable_raw_mode,
-};
+use crossterm::event::{self, Event, KeyCode, KeyModifiers};
 use ratatui::{
     Terminal,
     backend::CrosstermBackend,
