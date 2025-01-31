@@ -1,12 +1,8 @@
 use crate::prelude::*;
 use crate::tui;
 use crate::web;
-use std::io::Stdout;
 use std::sync::Arc;
 use std::sync::Mutex;
-
-use ratatui::Terminal;
-use ratatui::prelude::CrosstermBackend;
 
 #[derive(Default)]
 pub struct App {
@@ -31,7 +27,13 @@ pub enum State {
 }
 
 impl App {
-    pub fn get_input(&mut self) -> Result<()> {
+    pub async fn run(&mut self) -> Result<()> {
+        self.get_input()?;
+        self.subscribe().await?;
+        Ok(())
+    }
+
+    fn get_input(&mut self) -> Result<()> {
         self.user.username = self.tui.get_input(&self.state)?;
         self.state = State::Room;
         self.user.room = self.tui.get_input(&self.state)?;
@@ -39,7 +41,7 @@ impl App {
         Ok(())
     }
 
-    pub async fn subscribe(&mut self) -> Result<()> {
+    async fn subscribe(&mut self) -> Result<()> {
         let client = reqwest::Client::new();
 
         let (token, room) =
