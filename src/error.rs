@@ -2,8 +2,8 @@ use thiserror;
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
-    #[error("Program terminated with {0}")]
-    ProgramTerminated(String),
+    #[error("Cancelled")]
+    Cancelled,
 
     #[error(transparent)]
     IO(#[from] std::io::Error),

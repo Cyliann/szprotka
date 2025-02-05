@@ -57,7 +57,7 @@ impl TUI {
                     KeyCode::Enter => break,
                     KeyCode::Char(char) => {
                         if char == 'c' && key.modifiers == KeyModifiers::CONTROL {
-                            return Err(Error::ProgramTerminated("CTRL-C".to_string()));
+                            return Err(Error::Cancelled);
                         }
                         field.push(char);
                     }
@@ -65,7 +65,7 @@ impl TUI {
                         field.pop();
                     }
                     KeyCode::Esc => {
-                        return Err(Error::ProgramTerminated("ESC".to_string()));
+                        return Err(Error::Cancelled);
                     }
                     _ => {}
                 }
