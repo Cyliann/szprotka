@@ -7,7 +7,7 @@ use std::sync::Mutex;
 #[derive(Default)]
 pub struct App {
     tui: tui::TUI,
-    state: State,
+    state: AppState,
     pub user: User,
     messages: Arc<Mutex<Vec<String>>>,
 }
@@ -19,11 +19,12 @@ pub struct User {
     token: String,
 }
 
-#[derive(Default)]
-pub enum State {
+#[derive(Default, PartialEq, Eq)]
+enum AppState {
     #[default]
-    Username,
-    Room,
+    Running,
+    Cancelled,
+    Submitted,
 }
 
 impl App {
@@ -34,9 +35,11 @@ impl App {
     }
 
     fn get_input(&mut self) -> Result<()> {
-        self.user.username = self.tui.get_input(&self.state)?;
-        self.state = State::Room;
-        self.user.room = self.tui.get_input(&self.state)?;
+        // self.user.username = self.tui.get_input(&self.state)?;
+        // self.state = State::Room;
+        // self.user.room = self.tui.get_input(&self.state)?;
+        (self.user.username, self.user.room) =
+            tui::forms::LoginForm::default().run(&mut self.tui.terminal)?;
 
         Ok(())
     }
