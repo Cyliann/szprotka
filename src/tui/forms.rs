@@ -7,6 +7,12 @@ use ratatui::{
     widgets::Paragraph,
 };
 
+#[derive(Default)]
+struct App {
+    state: FormState,
+    form: LoginForm,
+}
+
 #[derive(Default, PartialEq, Eq)]
 enum FormState {
     #[default]
@@ -46,20 +52,7 @@ impl LoginForm {
         }
         Ok(())
     }
-}
 
-impl Default for LoginForm {
-    fn default() -> Self {
-        Self {
-            focus: Focus::Username,
-            username: StringField::new("Username"),
-            room: StringField::new("Room (leave empty to create a new room)"),
-            state: FormState::default(),
-        }
-    }
-}
-
-impl LoginForm {
     fn on_key_press(&mut self, event: KeyEvent) {
         match event.code {
             KeyCode::Tab => self.focus = self.focus.next(),
@@ -85,6 +78,17 @@ impl LoginForm {
             Focus::Room => last_name_area.offset(self.room.cursor_offset()),
         };
         frame.set_cursor_position(cursor_position);
+    }
+}
+
+impl Default for LoginForm {
+    fn default() -> Self {
+        Self {
+            focus: Focus::Username,
+            username: StringField::new("Username"),
+            room: StringField::new("Room (leave empty to create a new room)"),
+            state: FormState::default(),
+        }
     }
 }
 
