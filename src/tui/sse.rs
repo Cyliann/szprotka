@@ -1,5 +1,6 @@
 use std::sync::Arc;
 use std::sync::Mutex;
+use std::time::Duration;
 
 use crate::error;
 use crate::prelude::*;
@@ -55,16 +56,18 @@ impl MessageReceiver {
     }
 
     fn handle_events(&mut self) -> Result<()> {
-        match event::read()? {
-            Event::Key(event) if event.kind == KeyEventKind::Press => match event.code {
-                KeyCode::Esc => self.state = State::Cancelled,
-                KeyCode::Char(c) => match c {
-                    'q' => self.state = State::Cancelled,
-                    _ => (),
+        if event::poll(Duration::from_millis(100))? {
+            match event::read()? {
+                Event::Key(event) if event.kind == KeyEventKind::Press => match event.code {
+                    KeyCode::Esc => self.state = State::Cancelled,
+                    KeyCode::Char(c) => match c {
+                        'q' => self.state = State::Cancelled,
+                        _ => (),
+                    },
+                    _ => self.on_key_press(event),
                 },
-                _ => self.on_key_press(event),
-            },
-            _ => {}
+                _ => {}
+            }
         }
         Ok(())
     }
