@@ -3,15 +3,9 @@ use crate::{error, prelude::*};
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
 use ratatui::{
     DefaultTerminal, Frame,
-    layout::{Constraint, Layout, Offset},
+    layout::{Constraint, Flex, Layout, Offset},
     widgets::Paragraph,
 };
-
-#[derive(Default)]
-struct App {
-    state: FormState,
-    form: LoginForm,
-}
 
 #[derive(Default, PartialEq, Eq)]
 enum FormState {
@@ -64,18 +58,20 @@ impl LoginForm {
     }
 
     fn render(&self, frame: &mut Frame) {
-        let [first_name_area, _, last_name_area] =
-            Layout::vertical(Constraint::from_lengths([3, 2, 3]))
-                .horizontal_margin(50)
-                .vertical_margin(15)
-                .areas(frame.area());
+        let [area] = Layout::horizontal([Constraint::Percentage(30)])
+            .flex(Flex::Center)
+            .areas(frame.area());
 
-        frame.render_widget(self.username.widget(), first_name_area);
-        frame.render_widget(self.room.widget(), last_name_area);
+        let [username_area, _, room_area] = Layout::vertical(Constraint::from_lengths([3, 2, 3]))
+            .flex(Flex::Center)
+            .areas(area);
+
+        frame.render_widget(self.username.widget(), username_area);
+        frame.render_widget(self.room.widget(), room_area);
 
         let cursor_position = match self.focus {
-            Focus::Username => first_name_area.offset(self.username.cursor_offset()),
-            Focus::Room => last_name_area.offset(self.room.cursor_offset()),
+            Focus::Username => username_area.offset(self.username.cursor_offset()),
+            Focus::Room => room_area.offset(self.room.cursor_offset()),
         };
         frame.set_cursor_position(cursor_position);
     }
@@ -141,7 +137,8 @@ impl StringField {
         Paragraph::new(self.value.to_string()).block(
             ratatui::widgets::Block::default()
                 .borders(ratatui::widgets::Borders::ALL)
-                .title(self.label),
+                .title(self.label)
+                .title_position(ratatui::widgets::block::Position::Top),
         )
     }
 }
