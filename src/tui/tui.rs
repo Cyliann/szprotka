@@ -1,11 +1,11 @@
-use crate::prelude::*;
+use crate::{error, prelude::*};
 use std::{
     io,
     sync::{Arc, Mutex},
     time::Duration,
 };
 
-use crossterm::event::{self, Event, KeyCode, KeyModifiers};
+use crossterm::event::{self, Event, KeyCode};
 use ratatui::{
     Terminal,
     backend::CrosstermBackend,
@@ -21,7 +21,7 @@ pub struct TUI {
 impl TUI {
     pub fn display_sse(
         &mut self,
-        room: String,
+        room: &String,
         message_lock: Arc<Mutex<Vec<String>>>,
     ) -> Result<()> {
         loop {
@@ -54,13 +54,17 @@ impl TUI {
             if event::poll(Duration::from_millis(100))? {
                 if let Event::Key(key) = event::read()? {
                     match key.code {
-                        KeyCode::Esc => break,
+                        KeyCode::Esc => return Err(error::Error::Cancelled),
+                        KeyCode::Char(c) => {
+                            if c == 'q' {
+                                return Err(error::Error::Cancelled);
+                            }
+                        }
                         _ => (),
                     }
                 }
             }
         }
-        Ok(())
     }
 }
 

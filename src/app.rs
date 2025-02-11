@@ -7,7 +7,6 @@ use std::sync::Mutex;
 #[derive(Default)]
 pub struct App {
     tui: tui::TUI,
-    state: AppState,
     pub user: User,
     messages: Arc<Mutex<Vec<String>>>,
 }
@@ -19,18 +18,13 @@ pub struct User {
     token: String,
 }
 
-#[derive(Default, PartialEq, Eq)]
-enum AppState {
-    #[default]
-    Running,
-    Cancelled,
-    Submitted,
-}
-
 impl App {
     pub async fn run(&mut self) -> Result<()> {
         self.get_input()?;
         self.subscribe().await?;
+        self.tui
+            .display_sse(&self.user.room, self.messages.clone())?;
+
         Ok(())
     }
 
@@ -54,8 +48,6 @@ impl App {
 
         let message_lock = self.messages.clone();
         tokio::task::spawn(async move { web::sse::handle_sse(token, message_lock).await });
-
-        self.tui.display_sse(room, self.messages.clone())?;
 
         Ok(())
     }

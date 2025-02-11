@@ -7,12 +7,6 @@ use ratatui::{
     widgets::Paragraph,
 };
 
-#[derive(Default)]
-struct App {
-    state: FormState,
-    form: LoginForm,
-}
-
 #[derive(Default, PartialEq, Eq)]
 enum FormState {
     #[default]
