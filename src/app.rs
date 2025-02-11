@@ -1,12 +1,17 @@
+use ratatui::Terminal;
+use ratatui::prelude::CrosstermBackend;
+
+use std::{
+    io,
+    sync::{Arc, Mutex},
+};
+
 use crate::prelude::*;
 use crate::tui;
 use crate::web;
-use std::sync::Arc;
-use std::sync::Mutex;
 
-#[derive(Default)]
 pub struct App {
-    tui: tui::TUI,
+    terminal: Terminal<CrosstermBackend<io::Stdout>>,
     pub user: User,
     messages: Arc<Mutex<Vec<String>>>,
 }
@@ -60,6 +65,16 @@ impl App {
         Ok(())
     }
 }
+
+impl Default for App {
+    fn default() -> Self {
+        let terminal = ratatui::init();
+        Self {
+            terminal,
+            user: User::default(),
+            messages: Arc::new(Mutex::new(vec![])),
+        }
+    }
 }
 
 impl Drop for App {
