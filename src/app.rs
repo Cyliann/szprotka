@@ -22,8 +22,7 @@ impl App {
     pub async fn run(&mut self) -> Result<()> {
         self.get_input()?;
         self.subscribe().await?;
-        self.tui
-            .display_sse(&self.user.room, self.messages.clone())?;
+        self.receive_messages()?;
 
         Ok(())
     }
@@ -33,7 +32,7 @@ impl App {
         // self.state = State::Room;
         // self.user.room = self.tui.get_input(&self.state)?;
         (self.user.username, self.user.room) =
-            tui::forms::LoginForm::default().run(&mut self.tui.terminal)?;
+            tui::forms::LoginForm::default().run(&mut self.terminal)?;
 
         Ok(())
     }
@@ -51,6 +50,16 @@ impl App {
 
         Ok(())
     }
+
+    fn receive_messages(&mut self) -> Result<()> {
+        tui::sse::MessageReceiver::default().run(
+            &mut self.terminal,
+            self.user.room.clone(),
+            self.messages.clone(),
+        )?;
+        Ok(())
+    }
+}
 }
 
 impl Drop for App {
