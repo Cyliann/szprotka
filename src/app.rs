@@ -27,7 +27,7 @@ impl App {
     pub async fn run(&mut self) -> Result<()> {
         self.get_input()?;
         self.subscribe().await?;
-        self.receive_messages()?;
+        self.receive_messages().await?;
 
         Ok(())
     }
@@ -53,12 +53,15 @@ impl App {
         Ok(())
     }
 
-    fn receive_messages(&mut self) -> Result<()> {
-        tui::sse::MessageReceiver::default().run(
-            &mut self.terminal,
-            self.user.room.clone(),
-            self.messages.clone(),
-        )?;
+    async fn receive_messages(&mut self) -> Result<()> {
+        tui::sse::MessageReceiver::default()
+            .run(
+                &mut self.terminal,
+                self.user.room.clone(),
+                self.messages.clone(),
+                self.user.token.clone(),
+            )
+            .await?;
         Ok(())
     }
 }

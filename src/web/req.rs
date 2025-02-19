@@ -43,11 +43,11 @@ pub async fn register(
     Err(Error::Token)
 }
 
-pub async fn _roll(client: &reqwest::Client, token: &String) -> Result<reqwest::Response> {
+pub async fn roll(client: &reqwest::Client, token: &String, dice: u8) -> Result<reqwest::Response> {
     let mut params = HashMap::new();
     let mut headers = reqwest::header::HeaderMap::new();
 
-    params.insert("dice", [100, 20, 6]);
+    params.insert("dice", dice);
     headers.insert(AUTHORIZATION, format!("Bearer {}", token).parse().unwrap());
 
     let req = client

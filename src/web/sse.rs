@@ -14,7 +14,7 @@ struct Roll {
     #[serde(rename = "Room")]
     _room: String,
     #[serde(rename = "Result")]
-    result: Vec<u8>,
+    result: u8,
 }
 
 const URL: &str = "http://localhost:8080";
@@ -67,11 +67,5 @@ fn handle_events(ev: es::Event) -> String {
 
     let body: Roll = serde_json::from_str(&ev.data).unwrap();
 
-    let mut results = String::new();
-    for r in body.result.iter() {
-        results.push_str(&r.to_string());
-        results.push_str(", ");
-    }
-
-    format!("{} rolled {}", body.username, results)
+    format!("{} rolled {}", body.username, body.result)
 }
