@@ -1,4 +1,7 @@
-use std::sync::{Arc, Mutex};
+use std::{
+    str::FromStr,
+    sync::{Arc, Mutex},
+};
 
 use crate::prelude::*;
 
@@ -6,6 +9,23 @@ use eventsource_client as es;
 use futures::{Stream, TryStreamExt};
 use serde::Deserialize;
 use serde_json;
+
+enum Event {
+    Roll,
+    Join,
+}
+
+impl FromStr for Event {
+    type Err = ();
+
+    fn from_str(s: &str) -> std::result::Result<Self, ()> {
+        match s {
+            "roll" => Ok(Self::Roll),
+            "join" => Ok(Self::Join),
+            _ => Err(()),
+        }
+    }
+}
 
 #[derive(Deserialize)]
 struct Roll {
@@ -61,11 +81,16 @@ fn tail_events(
 }
 
 fn handle_events(ev: es::Event) -> String {
-    if ev.event_type != "roll" {
-        return format!("Event type: {}\nEvent data: {}", ev.event_type, ev.data);
+    let ev_type = ev.event_type.parse::<Event>();
+    match ev_type {
+        Ok(Event::Roll) => {
+            let body: Roll = serde_json::from_str(&ev.data).unwrap();
+
+            format!("{} rolled {}", body.username, body.result)
+        }
+        Ok(Event::Join) => {
+            format!("{} joined the party!", ev.data)
+        }
+        Err(_) => format!("Event type: {}\nEvent data: {}", ev.event_type, ev.data),
     }
-
-    let body: Roll = serde_json::from_str(&ev.data).unwrap();
-
-    format!("{} rolled {}", body.username, body.result)
 }
