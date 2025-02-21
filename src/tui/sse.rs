@@ -8,6 +8,7 @@ use crate::web::req;
 
 use crossterm::event::{self, Event, KeyCode, KeyEventKind};
 use ratatui::layout::Constraint;
+use ratatui::text::Line;
 use ratatui::{
     DefaultTerminal, Frame,
     layout::Layout,
@@ -81,7 +82,8 @@ impl MessageReceiver {
         Paragraph::new(self.messages.join("\n\n")).block(
             Block::default()
                 .borders(Borders::ALL)
-                .title(format!("Room {}", self.room)),
+                .title_top(format!("Room {}", self.room))
+                .title_bottom(get_keybinds()),
         )
     }
 
@@ -95,4 +97,10 @@ impl MessageReceiver {
             Err(err) => Err(err),
         }
     }
+}
+
+fn get_keybinds() -> String {
+    let keybinds = vec!["r to roll", "Esc/q to quit"];
+
+    keybinds.join(",  ")
 }
