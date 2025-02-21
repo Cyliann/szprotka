@@ -6,7 +6,7 @@ use crate::error;
 use crate::prelude::*;
 use crate::web::req;
 
-use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
+use crossterm::event::{self, Event, KeyCode, KeyEventKind};
 use ratatui::layout::Constraint;
 use ratatui::{
     DefaultTerminal, Frame,

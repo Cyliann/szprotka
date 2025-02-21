@@ -71,9 +71,7 @@ fn tail_events(
                 es::SSE::Comment(comment) => {
                     format!("Comment: \n{}", comment)
                 }
-                es::SSE::Connected(conn) => {
-                    format!("Connected! {}", conn.response().status())
-                }
+                es::SSE::Connected(_) => String::new(),
             };
             message_lock.lock().unwrap().push(message);
         })
