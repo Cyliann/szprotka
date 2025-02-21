@@ -8,7 +8,6 @@ use crate::web::req;
 
 use crossterm::event::{self, Event, KeyCode, KeyEventKind};
 use ratatui::layout::Constraint;
-use ratatui::text::Line;
 use ratatui::{
     DefaultTerminal, Frame,
     layout::Layout,

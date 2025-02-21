@@ -4,7 +4,7 @@ use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
 use ratatui::{
     DefaultTerminal, Frame,
     layout::{Constraint, Flex, Layout, Offset},
-    widgets::Paragraph,
+    widgets::{Paragraph, Wrap},
 };
 
 #[derive(Default, PartialEq, Eq)]
@@ -62,12 +62,14 @@ impl LoginForm {
             .flex(Flex::Center)
             .areas(frame.area());
 
-        let [username_area, _, room_area] = Layout::vertical(Constraint::from_lengths([3, 2, 3]))
-            .flex(Flex::Center)
-            .areas(area);
+        let [username_area, _, room_area, keybinds_area] =
+            Layout::vertical(Constraint::from_lengths([3, 2, 3, 3]))
+                .flex(Flex::Center)
+                .areas(area);
 
         frame.render_widget(self.username.widget(), username_area);
         frame.render_widget(self.room.widget(), room_area);
+        frame.render_widget(keybinds_widget(), keybinds_area);
 
         let cursor_position = match self.focus {
             Focus::Username => username_area.offset(self.username.cursor_offset()),
@@ -137,8 +139,12 @@ impl StringField {
         Paragraph::new(self.value.to_string()).block(
             ratatui::widgets::Block::default()
                 .borders(ratatui::widgets::Borders::ALL)
-                .title(self.label)
-                .title_position(ratatui::widgets::block::Position::Top),
+                .title_top(self.label),
         )
     }
+}
+
+fn keybinds_widget() -> Paragraph<'static> {
+    let keybinds = vec!["Tab to switch field", "Enter to proceed", "Esc to quit"];
+    Paragraph::new(keybinds.join(",  ")).wrap(Wrap { trim: true })
 }
