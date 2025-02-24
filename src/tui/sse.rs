@@ -19,7 +19,6 @@ use super::utils;
 enum State {
     #[default]
     Running,
-    Exiting,
     Exited,
 }
 
@@ -29,6 +28,7 @@ pub struct MessageReceiver {
     messages: Vec<String>,
     state: State,
     token: String,
+    show_popup: bool,
 }
 
 impl MessageReceiver {
@@ -41,7 +41,7 @@ impl MessageReceiver {
     ) -> Result<()> {
         self.room = room;
         self.token = token;
-        while self.state == State::Running || self.state == State::Exiting {
+        while self.state == State::Running {
             self.messages = message_lock.lock().unwrap().clone();
             terminal.draw(|frame| self.render(frame))?;
             self.handle_events().await?;
@@ -49,13 +49,12 @@ impl MessageReceiver {
 
         match self.state {
             State::Exited => Err(error::Error::Cancelled),
-            State::Exiting => unreachable!(),
             State::Running => unreachable!(),
         }
     }
 
     fn render(&self, frame: &mut Frame) {
-        if self.state == State::Exiting {
+        if self.show_popup {
             exit_popup(frame);
         }
         let [area] = Layout::horizontal([Constraint::Percentage(100)])
@@ -67,27 +66,31 @@ impl MessageReceiver {
 
     async fn handle_events(&mut self) -> Result<()> {
         if event::poll(Duration::from_millis(100))? {
-            match event::read()? {
-                Event::Key(event) if event.kind == KeyEventKind::Press => match event.code {
-                    KeyCode::Esc => self.state = State::Exiting,
-                    KeyCode::Char(c) => match c {
-                        'q' => self.state = State::Exiting,
-                        'r' => self.roll().await?,
-                        'y' => {
-                            if self.state == State::Exiting {
-                                self.state = State::Exited;
-                            }
-                        }
-                        'n' => {
-                            if self.state == State::Exiting {
-                                self.state = State::Running;
-                            }
-                        }
+            if self.show_popup {
+                match event::read()? {
+                    Event::Key(event) if event.kind == KeyEventKind::Press => match event.code {
+                        KeyCode::Char(c) => match c {
+                            'y' => self.state = State::Exited,
+                            'n' => self.show_popup = false,
+                            _ => (),
+                        },
                         _ => (),
                     },
                     _ => (),
-                },
-                _ => {}
+                }
+            } else {
+                match event::read()? {
+                    Event::Key(event) if event.kind == KeyEventKind::Press => match event.code {
+                        KeyCode::Esc => self.show_popup = true,
+                        KeyCode::Char(c) => match c {
+                            'q' => self.show_popup = true,
+                            'r' => self.roll().await?,
+                            _ => (),
+                        },
+                        _ => (),
+                    },
+                    _ => {}
+                }
             }
         }
         Ok(())
