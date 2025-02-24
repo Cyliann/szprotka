@@ -4,7 +4,7 @@ use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
 use ratatui::{
     DefaultTerminal, Frame,
     layout::{Constraint, Flex, Layout, Offset},
-    widgets::{Paragraph, Wrap},
+    widgets::{BorderType, Paragraph, Wrap},
 };
 
 #[derive(Default, PartialEq, Eq)]
@@ -39,7 +39,13 @@ impl LoginForm {
         match event::read()? {
             Event::Key(event) if event.kind == KeyEventKind::Press => match event.code {
                 KeyCode::Esc => self.state = FormState::Cancelled,
-                KeyCode::Enter => self.state = FormState::Submitted,
+                KeyCode::Enter => {
+                    if self.username.value == "" {
+                        show_empty_username_err();
+                    } else {
+                        self.state = FormState::Submitted
+                    }
+                }
                 _ => self.on_key_press(event),
             },
             _ => {}
@@ -139,6 +145,7 @@ impl StringField {
         Paragraph::new(self.value.to_string()).block(
             ratatui::widgets::Block::default()
                 .borders(ratatui::widgets::Borders::ALL)
+                .border_type(BorderType::Rounded)
                 .title_top(self.label),
         )
     }
@@ -148,3 +155,5 @@ fn keybinds_widget() -> Paragraph<'static> {
     let keybinds = vec!["Tab to switch field", "Enter to proceed", "Esc to quit"];
     Paragraph::new(keybinds.join(",  ")).wrap(Wrap { trim: true })
 }
+
+fn show_empty_username_err() {}

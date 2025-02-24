@@ -96,6 +96,7 @@ impl MessageReceiver {
         Paragraph::new(self.messages.join("\n\n")).block(
             Block::default()
                 .borders(Borders::ALL)
+                .border_type(BorderType::Rounded)
                 .title_top(format!("Room {}", self.room))
                 .title_bottom(get_keybinds()),
         )
@@ -116,7 +117,7 @@ impl MessageReceiver {
         let size = frame.area();
 
         // Define a centered popup size
-        let popup_area = centered_rect(20, 15, size);
+        let popup_area = centered_rect(20, 15, 35, 0, size);
 
         // Create the popup widget
         let block = Block::default()
@@ -125,7 +126,7 @@ impl MessageReceiver {
             .border_type(BorderType::Rounded)
             .style(Style::default().fg(Color::White).bg(Color::Black));
 
-        let text = Paragraph::new("Are you sure you want to exit?\n\n[Y] Yes   [N] No")
+        let text = Paragraph::new("Are you sure you want to exit?\n\n\n[Y] Yes   [N] No")
             .block(block)
             .alignment(Alignment::Center);
 
@@ -135,12 +136,12 @@ impl MessageReceiver {
 }
 
 // Helper function to create a centered rectangle
-fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
+fn centered_rect(percent_x: u16, percent_y: u16, min_x: u16, min_y: u16, r: Rect) -> Rect {
     let popup_layout = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
             Constraint::Percentage((100 - percent_y) / 2), // Top padding
-            Constraint::Percentage(percent_y),             // Popup height
+            Constraint::Min(min_y),                        // Popup height
             Constraint::Percentage((100 - percent_y) / 2), // Bottom padding
         ])
         .split(r);
@@ -149,7 +150,7 @@ fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
         .direction(Direction::Horizontal)
         .constraints([
             Constraint::Percentage((100 - percent_x) / 2), // Left padding
-            Constraint::Percentage(percent_x),             // Popup width
+            Constraint::Min(min_x),                        // Popup width
             Constraint::Percentage((100 - percent_x) / 2), // Right padding
         ])
         .split(popup_layout[1]);
