@@ -14,6 +14,8 @@ use ratatui::{
     widgets::{Block, BorderType, Borders, Paragraph},
 };
 
+use super::utils;
+
 #[derive(Debug, Default, PartialEq, Eq)]
 enum State {
     #[default]
@@ -55,7 +57,7 @@ impl MessageReceiver {
 
     fn render(&self, frame: &mut Frame) {
         if self.state == State::Exiting {
-            self.exit_popup(frame);
+            exit_popup(frame);
         }
         let [area] = Layout::horizontal([Constraint::Percentage(100)])
             .margin(2)
@@ -112,54 +114,22 @@ impl MessageReceiver {
             Err(err) => Err(err),
         }
     }
-
-    fn exit_popup(&self, frame: &mut Frame) {
-        let size = frame.area();
-
-        // Define a centered popup size
-        let popup_area = centered_rect(20, 15, 35, 0, size);
-
-        // Create the popup widget
-        let block = Block::default()
-            .title("Confirm Exit")
-            .borders(Borders::ALL)
-            .border_type(BorderType::Rounded)
-            .style(Style::default().fg(Color::White).bg(Color::Black));
-
-        let text = Paragraph::new("Are you sure you want to exit?\n\n\n[Y] Yes   [N] No")
-            .block(block)
-            .alignment(Alignment::Center);
-
-        // Render the popup
-        frame.render_widget(text, popup_area);
-    }
-}
-
-// Helper function to create a centered rectangle
-fn centered_rect(percent_x: u16, percent_y: u16, min_x: u16, min_y: u16, r: Rect) -> Rect {
-    let popup_layout = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints([
-            Constraint::Percentage((100 - percent_y) / 2), // Top padding
-            Constraint::Min(min_y),                        // Popup height
-            Constraint::Percentage((100 - percent_y) / 2), // Bottom padding
-        ])
-        .split(r);
-
-    let popup_area = Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints([
-            Constraint::Percentage((100 - percent_x) / 2), // Left padding
-            Constraint::Min(min_x),                        // Popup width
-            Constraint::Percentage((100 - percent_x) / 2), // Right padding
-        ])
-        .split(popup_layout[1]);
-
-    popup_area[1] // The centered area
 }
 
 fn get_keybinds() -> String {
     let keybinds = vec!["r to roll", "Esc/q to quit"];
 
     keybinds.join(",  ")
+}
+
+fn exit_popup(frame: &mut Frame) {
+    let title = "Confirm Exit";
+    let text = "Are you sure you want to exit?\n\n\n[Y] Yes   [N] No";
+    let dimensions = utils::Dimensions {
+        percent_x: 20,
+        percent_y: 15,
+        min_x: 35,
+        min_y: 5,
+    };
+    utils::popup(frame, dimensions, title, text);
 }
