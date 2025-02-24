@@ -9,8 +9,7 @@ use crate::web::req;
 use crossterm::event::{self, Event, KeyCode, KeyEventKind};
 use ratatui::{
     DefaultTerminal, Frame,
-    layout::{Alignment, Constraint, Direction, Layout, Rect},
-    style::{Color, Style},
+    layout::{Constraint, Layout},
     widgets::{Block, BorderType, Borders, Paragraph},
 };
 

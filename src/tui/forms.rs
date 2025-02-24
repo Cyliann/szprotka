@@ -7,6 +7,8 @@ use ratatui::{
     widgets::{BorderType, Paragraph, Wrap},
 };
 
+use super::utils;
+
 #[derive(Default, PartialEq, Eq)]
 enum FormState {
     #[default]
@@ -20,6 +22,7 @@ pub struct LoginForm {
     username: StringField,
     room: StringField,
     state: FormState,
+    show_popup: bool,
 }
 
 impl LoginForm {
@@ -36,19 +39,27 @@ impl LoginForm {
     }
 
     fn handle_events(&mut self) -> Result<()> {
-        match event::read()? {
-            Event::Key(event) if event.kind == KeyEventKind::Press => match event.code {
-                KeyCode::Esc => self.state = FormState::Cancelled,
-                KeyCode::Enter => {
-                    if self.username.value == "" {
-                        show_empty_username_err();
-                    } else {
-                        self.state = FormState::Submitted
-                    }
+        if self.show_popup {
+            match event::read()? {
+                Event::Key(event) if event.kind == KeyEventKind::Press => {
+                    self.show_popup = false;
                 }
-                _ => self.on_key_press(event),
-            },
-            _ => {}
+                _ => (),
+            }
+        } else {
+            match event::read()? {
+                Event::Key(event) if event.kind == KeyEventKind::Press => match event.code {
+                    KeyCode::Esc => self.state = FormState::Cancelled,
+                    KeyCode::Enter => {
+                        self.show_popup = self.username.value == "";
+                        if !self.show_popup {
+                            self.state = FormState::Submitted;
+                        }
+                    }
+                    _ => self.on_key_press(event),
+                },
+                _ => (),
+            }
         }
         Ok(())
     }
@@ -82,6 +93,10 @@ impl LoginForm {
             Focus::Room => room_area.offset(self.room.cursor_offset()),
         };
         frame.set_cursor_position(cursor_position);
+
+        if self.show_popup {
+            show_empty_username_popup(frame);
+        }
     }
 }
 
@@ -92,6 +107,7 @@ impl Default for LoginForm {
             username: StringField::new("Username"),
             room: StringField::new("Room (leave empty to create a new room)"),
             state: FormState::default(),
+            show_popup: false,
         }
     }
 }
@@ -156,4 +172,14 @@ fn keybinds_widget() -> Paragraph<'static> {
     Paragraph::new(keybinds.join(",  ")).wrap(Wrap { trim: true })
 }
 
-fn show_empty_username_err() {}
+fn show_empty_username_popup(frame: &mut Frame) {
+    let title = "Invalid input";
+    let text = "Username cannot be empty\n\n\n[OK]";
+    let dim = utils::Dimensions {
+        percent_x: 20,
+        percent_y: 15,
+        min_x: 35,
+        min_y: 5,
+    };
+    utils::popup(frame, dim, title, text);
+}

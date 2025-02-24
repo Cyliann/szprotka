@@ -2,7 +2,7 @@ use ratatui::{
     Frame,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Style},
-    widgets::{Block, BorderType, Borders, Paragraph},
+    widgets::{Block, BorderType, Borders, Clear, Paragraph},
 };
 
 pub struct Dimensions {
@@ -23,13 +23,14 @@ pub fn popup(frame: &mut Frame, dimensions: Dimensions, title: &str, text: &str)
         .title(title)
         .borders(Borders::ALL)
         .border_type(BorderType::Rounded)
-        .style(Style::default().fg(Color::White).bg(Color::Black));
+        .style(Style::default().fg(Color::Red).bg(Color::Black));
 
     let text = Paragraph::new(text)
         .block(block)
         .alignment(Alignment::Center);
 
     // Render the popup
+    frame.render_widget(Clear, popup_area);
     frame.render_widget(text, popup_area);
 }
 
