@@ -96,7 +96,8 @@ impl MessageReceiver {
         Paragraph::new(self.messages.join("\n\n")).block(
             Block::default()
                 .borders(Borders::ALL)
-                .title(format!("Room {}", self.room)),
+                .title_top(format!("Room {}", self.room))
+                .title_bottom(get_keybinds()),
         )
     }
 
@@ -154,4 +155,10 @@ fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
         .split(popup_layout[1]);
 
     popup_area[1] // The centered area
+}
+
+fn get_keybinds() -> String {
+    let keybinds = vec!["r to roll", "Esc/q to quit"];
+
+    keybinds.join(",  ")
 }
