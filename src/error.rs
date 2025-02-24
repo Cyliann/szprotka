@@ -5,6 +5,9 @@ pub enum Error {
     #[error("Cancelled")]
     Cancelled,
 
+    #[error("Invalid form submission")]
+    InvalidForm,
+
     #[error(transparent)]
     IO(#[from] std::io::Error),
 

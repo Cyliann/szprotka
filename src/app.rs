@@ -26,7 +26,12 @@ pub struct User {
 impl App {
     pub async fn run(&mut self) -> Result<()> {
         self.get_input()?;
-        self.subscribe().await?;
+        while let Err(err) = self.subscribe().await {
+            match err {
+                Error::InvalidForm => self.get_input(),
+                _ => Err(err),
+            }?
+        }
         self.receive_messages().await?;
 
         Ok(())
@@ -42,15 +47,23 @@ impl App {
     async fn subscribe(&mut self) -> Result<()> {
         let client = reqwest::Client::new();
 
-        let (token, room) =
-            web::req::register(&client, &self.user.username, &self.user.room).await?;
-        self.user.room = room.clone();
-        self.user.token = token.clone();
+        match web::req::register(&client, &self.user.username, &self.user.room).await {
+            Ok((token, room)) => {
+                self.user.room = room.clone();
+                self.user.token = token.clone();
 
-        let message_lock = self.messages.clone();
-        tokio::task::spawn(async move { web::sse::handle_sse(token, message_lock).await });
-
-        Ok(())
+                let message_lock = self.messages.clone();
+                tokio::task::spawn(async move { web::sse::handle_sse(token, message_lock).await });
+                Ok(())
+            }
+            Err(err) => match err {
+                Error::Request(err) => match err.status() {
+                    Some(reqwest::StatusCode::BAD_REQUEST) => Err(Error::InvalidForm),
+                    _ => Err(err.into()),
+                },
+                _ => Err(err),
+            },
+        }
     }
 
     async fn receive_messages(&mut self) -> Result<()> {
