@@ -37,7 +37,7 @@ struct Roll {
     result: u8,
 }
 
-const URL: &str = "http://localhost:8080";
+const URL: &str = "https://diceroll.cych.eu";
 
 pub async fn handle_sse(token: String, message_lock: Arc<Mutex<Vec<String>>>) -> Result<()> {
     let token_str = format!("Bearer {token}");
