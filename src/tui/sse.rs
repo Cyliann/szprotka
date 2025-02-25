@@ -69,13 +69,8 @@ impl MessageReceiver {
             if self.show_popup {
                 match event::read()? {
                     Event::Key(event) if event.kind == KeyEventKind::Press => match event.code {
-                        KeyCode::Enter => self.state = State::Exited,
-                        KeyCode::Esc => self.show_popup = false,
-                        KeyCode::Char(c) => match c {
-                            'y' => self.state = State::Exited,
-                            'n' => self.show_popup = false,
-                            _ => (),
-                        },
+                        KeyCode::Char('y') | KeyCode::Enter => self.state = State::Exited,
+                        KeyCode::Char('n') | KeyCode::Esc => self.show_popup = false,
                         _ => (),
                     },
                     _ => (),
@@ -83,12 +78,8 @@ impl MessageReceiver {
             } else {
                 match event::read()? {
                     Event::Key(event) if event.kind == KeyEventKind::Press => match event.code {
-                        KeyCode::Esc => self.show_popup = true,
-                        KeyCode::Char(c) => match c {
-                            'q' => self.show_popup = true,
-                            'r' => self.roll().await?,
-                            _ => (),
-                        },
+                        KeyCode::Char('q') | KeyCode::Esc => self.show_popup = true,
+                        KeyCode::Char('r') => self.roll().await?,
                         _ => (),
                     },
                     _ => {}
