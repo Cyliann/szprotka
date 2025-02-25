@@ -25,10 +25,12 @@ pub struct User {
 
 impl App {
     pub async fn run(&mut self) -> Result<()> {
-        self.get_input()?;
+        self.get_input(false)?;
+
+        // retry if form submition is invalid
         while let Err(err) = self.subscribe().await {
             match err {
-                Error::InvalidForm => self.get_input(),
+                Error::InvalidForm => self.get_input(true),
                 _ => Err(err),
             }?
         }
@@ -37,9 +39,9 @@ impl App {
         Ok(())
     }
 
-    fn get_input(&mut self) -> Result<()> {
+    fn get_input(&mut self, invalid_form: bool) -> Result<()> {
         (self.user.username, self.user.room) =
-            tui::forms::LoginForm::default().run(&mut self.terminal)?;
+            tui::forms::LoginForm::default().run(&mut self.terminal, invalid_form)?;
 
         Ok(())
     }

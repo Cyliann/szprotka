@@ -17,20 +17,34 @@ enum FormState {
     Submitted,
 }
 
+enum FormError {
+    EmptyUsername,
+    InvalidRoom,
+}
+
 pub struct LoginForm {
     focus: Focus,
     username: StringField,
     room: StringField,
     state: FormState,
-    show_popup: bool,
+    error: Option<FormError>,
 }
 
 impl LoginForm {
-    pub fn run(mut self, terminal: &mut DefaultTerminal) -> Result<(String, String)> {
+    pub fn run(
+        mut self,
+        terminal: &mut DefaultTerminal,
+        invalid_room: bool,
+    ) -> Result<(String, String)> {
+        if invalid_room {
+            self.error = Some(FormError::InvalidRoom)
+        }
+
         while self.state == FormState::Running {
             terminal.draw(|frame| self.render(frame))?;
             self.handle_events()?;
         }
+
         match self.state {
             FormState::Cancelled => Err(error::Error::Cancelled),
             FormState::Submitted => Ok((self.username.value, self.room.value)),
@@ -39,10 +53,10 @@ impl LoginForm {
     }
 
     fn handle_events(&mut self) -> Result<()> {
-        if self.show_popup {
+        if self.error.is_some() {
             match event::read()? {
                 Event::Key(event) if event.kind == KeyEventKind::Press => {
-                    self.show_popup = false;
+                    self.error = None;
                 }
                 _ => (),
             }
@@ -51,8 +65,11 @@ impl LoginForm {
                 Event::Key(event) if event.kind == KeyEventKind::Press => match event.code {
                     KeyCode::Esc => self.state = FormState::Cancelled,
                     KeyCode::Enter => {
-                        self.show_popup = self.username.value == "";
-                        if !self.show_popup {
+                        if self.username.value == "" {
+                            self.error = Some(FormError::EmptyUsername)
+                        }
+
+                        if self.error.is_none() {
                             self.state = FormState::Submitted;
                         }
                     }
@@ -94,8 +111,10 @@ impl LoginForm {
         };
         frame.set_cursor_position(cursor_position);
 
-        if self.show_popup {
-            show_empty_username_popup(frame);
+        match self.error {
+            None => (),
+            Some(FormError::EmptyUsername) => show_empty_username_popup(frame),
+            Some(FormError::InvalidRoom) => show_invalid_room_popup(frame),
         }
     }
 }
@@ -107,7 +126,7 @@ impl Default for LoginForm {
             username: StringField::new("Username"),
             room: StringField::new("Room (leave empty to create a new room)"),
             state: FormState::default(),
-            show_popup: false,
+            error: None,
         }
     }
 }
@@ -175,6 +194,18 @@ fn keybinds_widget() -> Paragraph<'static> {
 fn show_empty_username_popup(frame: &mut Frame) {
     let title = "Invalid input";
     let text = "Username cannot be empty\n\n\n[OK]";
+    let dim = utils::Dimensions {
+        percent_x: 20,
+        percent_y: 15,
+        min_x: 35,
+        min_y: 5,
+    };
+    utils::popup(frame, dim, title, text);
+}
+
+fn show_invalid_room_popup(frame: &mut Frame) {
+    let title = "Invalid input";
+    let text = "Specified room does not exist\n\n\n[OK]";
     let dim = utils::Dimensions {
         percent_x: 20,
         percent_y: 15,
