@@ -9,7 +9,7 @@ struct RegisterRespone {
     room: String,
 }
 
-const URL: &str = "https://diceroll.cych.eu";
+const URL: &str = "https://diceroll.cylian.dev/api";
 
 pub async fn register(
     client: &reqwest::Client,
