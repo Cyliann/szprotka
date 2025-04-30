@@ -1,0 +1,3 @@
+# Szprotka
+
+![Demo](./demo.gif) 
